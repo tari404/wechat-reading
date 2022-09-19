@@ -38,7 +38,7 @@
 
       <ul>
         <li v-for="(city, i) in cities" :key="i">
-          <router-link to="/about" href="#" class="city">
+          <router-link to="/about" class="city">
             {{ city }}
           </router-link>
         </li>
