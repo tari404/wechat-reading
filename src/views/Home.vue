@@ -11,6 +11,12 @@
       <div class="clickable" @click="closeMenu = !closeMenu"></div>
     </div>
 
+    <!-- <div>
+      <div>{{ d }}</div>
+      <div>{{ x }}</div>
+      <div>{{ y }}</div>
+    </div> -->
+
     <div class="wr-logo">
       <img height="24" src="~@/assets/wechat-reading.png" />
       <hr />
@@ -19,8 +25,18 @@
 
     <img class="wr-title" src="~@/assets/title.svg" />
 
-    <div class="wr-map">
-      <img src="~@/assets/map.svg" />
+    <div
+      class="wr-map"
+      ref="map"
+      @touchmove="ontouchmove"
+      @touchend="ontouchend"
+    >
+      <img
+        src="~@/assets/map.svg"
+        :style="{
+          transform: `scale(${scale}) translate3d(${x / 10}%,${y / 10}%,0)`,
+        }"
+      />
     </div>
 
     <div class="wr-menu">
@@ -52,11 +68,63 @@ export default {
   name: "Home",
   data() {
     return {
-      closeMenu: true,
+      closeMenu: false,
       closeCities: true,
 
       cities: ["吉首", "泸溪", "凤凰", "花垣", "保靖", "古丈", "永顺", "龙山"],
+
+      raf: 0,
+      x: 0,
+      y: 0,
+      d: 0,
+      touch: null,
+      innerScale: 1,
+      scale: 1,
     };
+  },
+  mounted() {
+    this.raf = requestAnimationFrame(this.update);
+  },
+  beforeDestroy() {
+    cancelAnimationFrame(this.raf);
+  },
+  methods: {
+    update() {
+      this.scale += (this.innerScale - this.scale) * 0.2;
+      this.raf = requestAnimationFrame(this.update);
+    },
+    ontouchmove(e) {
+      e.preventDefault();
+
+      if (this.touch) {
+        this.x += e.touches[0].pageX - this.touch.x;
+        this.y += e.touches[0].pageY - this.touch.y;
+      }
+
+      if (e.touches.length >= 2) {
+        const d = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+
+        if (this.d > 0) {
+          const zoom = d / this.d;
+          const scale = this.innerScale * zoom;
+          this.innerScale = Math.max(0.8, Math.min(5, scale));
+        }
+
+        this.d = d;
+      }
+
+      this.touch = {
+        x: e.touches[0].pageX,
+        y: e.touches[0].pageY,
+      };
+    },
+    ontouchend() {
+      this.d = 0;
+      this.touch = null;
+    },
   },
 };
 </script>
@@ -69,14 +137,12 @@ export default {
 
   height 100vh
 
-  display flex
-  flex-direction column
-  justify-content center
+  // display flex
+  // flex-direction column
+  // justify-content center
 
 .wr-notice
-  position fixed
-  top 0
-  left 0
+  position relative
   padding-bottom 4px
   transition transform .3s
   overflow hidden
@@ -137,6 +203,8 @@ export default {
   display flex
   align-items center
   gap 20px
+  position relative
+  z-index 1
   > hr
     margin 0
     height 52px
@@ -148,6 +216,8 @@ export default {
   margin 0 auto
   width 70%
   display block
+  position relative
+  z-index 1
 
 .wr-map
   margin 18px 0 36px
@@ -156,6 +226,7 @@ export default {
     display block
     margin auto
     width 96%
+    will-change transform
 
 .wr-menu
   position fixed
